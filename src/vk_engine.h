@@ -4,6 +4,7 @@
 #pragma once
 
 #include <vk_types.h>
+#include <vector>
 
 class VulkanEngine {
 public:
@@ -11,7 +12,8 @@ public:
 	bool _isInitialized{ false };
 	int _frameNumber {0};
 
-	VkExtent2D _windowExtent{ 1700 , 900 };
+
+	VkExtent2D _windowExtent{ 500 , 200 };
 
 	struct SDL_Window* _window{ nullptr };
 
@@ -26,4 +28,21 @@ public:
 
 	//run main loop
 	void run();
+
+	private:
+
+    VkInstance _instance; // Vulkan library handle
+	VkDebugUtilsMessengerEXT _debug_messenger; // Vulkan debug output handle
+	VkPhysicalDevice _chosenGPU; // GPU chosen as the default device
+	VkDevice _device; // Vulkan device for commands
+	VkSurfaceKHR _surface; // Vulkan window surface
+
+	VkSwapchainKHR _swapchain;
+	VkFormat _swapchainImageFormat;
+	std::vector<VkImage> _swapchainImages;
+	std::vector<VkImageView> _swapchainImageViews;
+
+	void init_vulkan();
+	void init_swapchain();
+
 };

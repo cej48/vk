@@ -1,3 +1,5 @@
+#include <cstdio>
+
 //
 // Copyright (c) 2017-2020 Advanced Micro Devices, Inc. All rights reserved.
 //

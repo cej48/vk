@@ -78,6 +78,8 @@ public:
 
 	std::vector<VkFramebuffer> _framebuffers;
 
+
+
 	VkSemaphore _presentSemaphore, _renderSemaphore;
 	VkFence _renderFence;
 

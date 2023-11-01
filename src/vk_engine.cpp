@@ -106,7 +106,6 @@ void VulkanEngine::upload_mesh(Mesh& mesh)
 
 	//add the destruction of triangle mesh buffer to the deletion queue
 	_mainDeletionQueue.push_function([=]() {
-
         vmaDestroyBuffer(_allocator, mesh._vertexBuffer._buffer, mesh._vertexBuffer._allocation);
     });
 
@@ -495,6 +494,7 @@ void VulkanEngine::cleanup()
 
 		_mainDeletionQueue.flush();
 
+		vmaDestroyAllocator(_allocator);
 		vkDestroyDevice(_device, nullptr);
 		vkDestroySurfaceKHR(_instance, _surface, nullptr);
 		vkb::destroy_debug_utils_messenger(_instance, _debug_messenger);
@@ -549,12 +549,20 @@ void VulkanEngine::draw()
 	if(_selectedShader == 0)
 	{
 		vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _trianglePipeline);
+		vkCmdDraw(cmd, 3, 1, 0, 0);
 	}
 	else
 	{
-		vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _redTrianglePipeline);
+
+		vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _meshPipeline);
+
+		//bind the mesh vertex buffer with offset 0
+		VkDeviceSize offset = 0;
+		vkCmdBindVertexBuffers(cmd, 0, 1, &_triangleMesh._vertexBuffer._buffer, &offset);
+
+		//we can now draw the mesh
+		vkCmdDraw(cmd, _triangleMesh._vertices.size(), 1, 0, 0);
 	}
-	vkCmdDraw(cmd, 3, 1, 0, 0);
 
 		//finalize the render pass
 	vkCmdEndRenderPass(cmd);

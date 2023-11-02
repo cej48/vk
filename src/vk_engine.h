@@ -7,10 +7,18 @@
 #include <vector>
 #include <deque>
 #include <functional>
+#include <unordered_map>
+#include <string>
 
+#include <glm/glm.hpp>
 #include "vk_mesh.h"
 
+#include <glm/glm.hpp>
+
+
 #include "vk_mem_alloc.h"
+
+constexpr unsigned int FRAME_OVERLAP = 2;
 
 
 struct DeletionQueue
@@ -32,8 +40,37 @@ struct DeletionQueue
 };
 
 
+struct MeshPushConstants { 
+	glm::vec4 data;
+	glm::mat4 render_matrix;
+};
+
+
+struct  Material {
+	VkPipeline pipeline;
+	VkPipelineLayout pipelineLayout;
+};
+
+struct RenderObject{
+	Mesh* mesh;
+	Material* material;
+	glm::mat4 transformMatrix;
+};
+
+struct FrameData {
+	VkSemaphore _presentSemaphore, _renderSemaphore;
+	VkFence _renderFence;	
+
+	VkCommandPool _commandPool;
+	VkCommandBuffer _mainCommandBuffer;
+};
+
 class VulkanEngine {
 public:
+
+	std::vector<RenderObject> _renderables;
+	std::unordered_map<std::string, Material> _materials;
+	std::unordered_map<std::string, Mesh> _meshes;
 
 	bool _isInitialized{ false };
 	int _frameNumber {0};
@@ -68,33 +105,40 @@ public:
 	std::vector<VkImage> _swapchainImages;
 	std::vector<VkImageView> _swapchainImageViews;
 
+	VkImageView _depthImageView;
+	AllocatedImage _depthImage;
+
+	VkFormat _depthFormat;
+
 	VkQueue _graphicsQueue;
 	uint32_t _graphicsQueueFamily;
-
-	VkCommandPool _commandPool;
-	VkCommandBuffer _mainCommandBuffer;
 
 	VkRenderPass _renderPass;
 
 	std::vector<VkFramebuffer> _framebuffers;
-
-
-
-	VkSemaphore _presentSemaphore, _renderSemaphore;
-	VkFence _renderFence;
+	int _swapchainImageCount;
+	
+	FrameData _frames[FRAME_OVERLAP];
+	
+	// VkSemaphore _presentSemaphore, _renderSemaphore;
+	// VkFence _renderFence;
 
 	VkPipelineLayout _trianglePipelineLayout;
+	VkPipelineLayout _meshPipelineLayout;
+
 	VkPipeline _trianglePipeline;
 	VkPipeline _redTrianglePipeline;
+	VkPipeline _meshPipeline;
+	
 
-	int _selectedShader{ 0 };
+	int _selectedShader{0};
 
 	DeletionQueue _mainDeletionQueue;
 
 	VmaAllocator _allocator;
 
-	VkPipeline _meshPipeline;
 	Mesh _triangleMesh;
+	Mesh _monkeyMesh;
 
 
 	void init_vulkan();
@@ -105,9 +149,18 @@ public:
 	void init_sync_structures();
 	bool load_shader_module(const char* filePath, VkShaderModule* outShaderModule);
 	void init_pipelines();
+	void init_scene();
+
+	FrameData& get_current_frame();
 
 	void load_meshes();
 	void upload_mesh(Mesh& mesh);
+
+	Material* create_material(VkPipeline pipeline, VkPipelineLayout layout,const std::string& name);
+	Material* get_material(const std::string& name);
+	Mesh* get_mesh(const std::string& name);
+	void draw_objects(VkCommandBuffer cmd,RenderObject* first, int count);
+	
 
 
 };
@@ -124,6 +177,9 @@ struct PipelineBuilder{
 	VkPipelineColorBlendAttachmentState _colorBlendAttachment;
 	VkPipelineMultisampleStateCreateInfo _multisampling;
 	VkPipelineLayout _pipelineLayout;
+
+	VkPipelineDepthStencilStateCreateInfo _depthStencil;
+
 
 	VkPipeline build_pipeline(VkDevice device, VkRenderPass pass);
 };
